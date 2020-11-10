@@ -32,7 +32,7 @@ class WeatherApi implements WeatherApiInterface
      * @param string $longitude
      * @param string $latitude
      *
-     * @return iterable
+     * @return Forecast[]
      */
     public function getForecastByCoordinates(string $latitude, string $longitude): iterable
     {
@@ -65,7 +65,7 @@ class WeatherApi implements WeatherApiInterface
      *
      * @param array $forecast
      *
-     * @return iterable
+     * @return Forecast[]
      */
     private function parseForecastsResponse(array $forecast): iterable
     {

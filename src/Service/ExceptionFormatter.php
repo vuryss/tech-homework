@@ -8,7 +8,7 @@ use Throwable;
 
 class ExceptionFormatter
 {
-    public static function formatForLog(Throwable $throwable)
+    public static function formatForLog(Throwable $throwable): string
     {
         $logString = get_class($throwable)
             . ' -> '

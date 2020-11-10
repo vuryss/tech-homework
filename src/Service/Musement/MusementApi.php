@@ -51,6 +51,7 @@ class MusementApi implements MusementApiInterface
         foreach ($cities as $cityData) {
             if (
                 !isset($cityData['name'])
+                || !is_string($cityData['name'])
                 || !isset($cityData['latitude'])
                 || !is_numeric($cityData['latitude'])
                 || !isset($cityData['longitude'])

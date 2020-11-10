@@ -54,9 +54,11 @@ class City
         return $this;
     }
 
-    public function addForecast(Forecast $forecast)
+    public function addForecast(Forecast $forecast): self
     {
         $this->dailyForecast[$forecast->getDate()->format('Y-m-d')] = $forecast;
+
+        return $this;
     }
 
     public function getForecastForDay(DateTimeImmutable $date): ?Forecast

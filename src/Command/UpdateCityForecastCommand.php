@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Exception\AppException;
 use App\Service\CityWeatherForecast;
-use App\Service\Musement\MusementApiInterface;
-use App\Service\Weather\WeatherApiInterface;
 use DateTimeImmutable;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
@@ -30,6 +29,24 @@ class UpdateCityForecastCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        try {
+            $this->outputCityForecast($output);
+        } catch (AppException $exception) {
+            $output->writeln('');
+            $output->writeln('<error>One or more errors occurred during processing of city forecasts</error>');
+            return Command::FAILURE;
+        }
+
+        return Command::SUCCESS;
+    }
+
+    /**
+     * @throws AppException
+     *
+     * @param OutputInterface $output
+     */
+    private function outputCityForecast(OutputInterface $output): void
+    {
         foreach ($this->cityWeatherForecast->getCitiesWithForecast() as $city) {
             $output->write('Processed city ' . $city->getName());
 
@@ -46,12 +63,10 @@ class UpdateCityForecastCommand extends Command
                     $this->logger->error('Missing tomorrow\'s forecast for city: ' . $city->getName());
                 }
             } else {
-                $this->logger->error('Missing forecast for city: ' . $city->getName());
+                throw new AppException('Missing forecast for city: ' . $city->getName());
             }
 
             $output->writeln('');
         }
-
-        return Command::SUCCESS;
     }
 }
