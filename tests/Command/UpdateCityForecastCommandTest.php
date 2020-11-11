@@ -116,6 +116,7 @@ class UpdateCityForecastCommandTest extends KernelTestCase
         $commandOutput = trim($commandTester->getDisplay());
 
         $expectedOutput = 'Processed city Test City' . PHP_EOL
+            . 'Missing forecast for city: Test City' . PHP_EOL
             . 'One or more errors occurred during processing of city forecasts';
 
         $this->assertEquals($expectedOutput, $commandOutput);

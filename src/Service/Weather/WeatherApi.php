@@ -7,6 +7,7 @@ namespace App\Service\Weather;
 use App\Exception\AppException;
 use App\Service\ExceptionFormatter;
 use DateTimeImmutable;
+use DateTimeZone;
 use Exception;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
@@ -38,7 +39,8 @@ class WeatherApi implements WeatherApiInterface
     {
         $queryParameters = [
             'key' => $this->apiKey,
-            'days' => 2,
+            // Because they might return a day behind in forecast, because the cities are in different timezones
+            'days' => 3,
             'q' => $latitude . ',' . $longitude,
         ];
 
@@ -95,7 +97,10 @@ class WeatherApi implements WeatherApiInterface
 
             try {
                 yield (new Forecast())
-                    ->setDate(new DateTimeImmutable('@' . $dayForecast['date_epoch']))
+                    ->setDate(
+                        (new DateTimeImmutable('@' . $dayForecast['date_epoch']))
+                            ->setTimezone(new DateTimeZone(date_default_timezone_get()))
+                    )
                     ->setWeather($dayForecast['day']['condition']['text']);
             } catch (Exception $exception) {
                 $this->logger->error(

@@ -33,6 +33,7 @@ class UpdateCityForecastCommand extends Command
             $this->outputCityForecast($output);
         } catch (AppException $exception) {
             $output->writeln('');
+            $output->writeln('<error>' . $exception->getMessage() . '</error>');
             $output->writeln('<error>One or more errors occurred during processing of city forecasts</error>');
             return Command::FAILURE;
         }
