@@ -1,0 +1,110 @@
+openapi: 3.0.0
+
+info:
+    description: Interview task
+    version: "1.0.0"
+    title: Interview task
+
+tags:
+    - name: city
+      description: City endpoints
+
+servers:
+    - url: 'https://sandbox.musement.com/api/v3'
+      description: Sandbox server
+    - url: 'https://api.musement.com/api/v3'
+      description: Production server
+
+paths:
+    '/cities/{cityId}/forecasts':
+        get:
+            tags:
+                - city
+            summary: Get all forecasts for the given city
+            parameters:
+                - $ref: '#/components/parameters/cityId'
+            responses:
+                '200':
+                    description: List of all forecasts for the given city
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Forecast'
+                '404':
+                    description: City not found or have no forecasts
+
+    '/cities/{cityId}/forecasts/{date}':
+        get:
+            tags:
+                - city
+            summary: Get a forecast for a given city on given date
+            parameters:
+                - $ref: '#/components/parameters/cityId'
+                - $ref: '#/components/parameters/date'
+            responses:
+                '200':
+                    description: Forecast exists and returned
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Forecast'
+                '404':
+                    description: City not found or forecast not found for given date
+        put:
+            tags:
+                - city
+            summary: Store a forecast for a given city on given date
+            parameters:
+                - $ref: '#/components/parameters/cityId'
+                - $ref: '#/components/parameters/date'
+            requestBody:
+                $ref: '#/components/requestBodies/Forecast'
+            responses:
+                '200':
+                    description: Forecast created or updated successfully
+                '400':
+                    description: Invalid forecast or date in the request body
+                '404':
+                    description: City in the url not found or invalid url date
+
+components:
+    parameters:
+        cityId:
+            name: cityId
+            in: path
+            description: City identifier
+            required: true
+            schema:
+                type: integer
+        date:
+            name: date
+            in: path
+            description: Date in format YYYY-MM-DD or 'today' or 'tomorrow'
+            required: true
+            schema:
+                oneOf:
+                    - type: string
+                      enum:
+                          - 'today'
+                          - 'tomorrow'
+                    - type: string
+                      format: date
+    schemas:
+        Forecast:
+            type: object
+            properties:
+                date:
+                    type: string
+                    format: date
+                weather:
+                    type: string
+    requestBodies:
+        Forecast:
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/components/schemas/Forecast'
+            description: Forecast for a specific date
+            required: true

@@ -22,3 +22,7 @@ Add your weather API key in .env.local file like:
 4. Run weather processor command
 
     `docker run -t --rm -v "$PWD":/var/app -w /var/app interview-task bin/console app:update-city-forecast`
+
+### API for storing city weather in Musement API
+
+OpenAPI specification can be found here: [OpenAPI spec](openapi-spec.yaml)
