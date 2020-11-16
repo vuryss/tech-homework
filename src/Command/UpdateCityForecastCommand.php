@@ -54,6 +54,10 @@ class UpdateCityForecastCommand extends Command
                 $forecastTexts[] = $forecast->getWeather();
             }
 
+            if (count($forecastTexts) !== 2) {
+                throw new AppException('Missing forecast for city: ' . $city->getName());
+            }
+
             $output->writeln(
                 'Processed city ' . $city->getName()
                 . ' | ' . implode(' - ', $forecastTexts)

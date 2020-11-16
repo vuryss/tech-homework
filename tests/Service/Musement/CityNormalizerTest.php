@@ -40,6 +40,14 @@ class CityNormalizerTest extends TestCase
         $this->assertEquals($city->getLongitude(), $result->getLongitude());
     }
 
+    public function testSupports()
+    {
+        $mockLogger = $this->createMock(LoggerInterface::class);
+        $normalizer = new CityNormalizer($mockLogger);
+        $this->assertTrue($normalizer->supportsDenormalization([], City::class));
+        $this->assertFalse($normalizer->supportsDenormalization([], Forecast::class));
+    }
+
     /**
      * @param $data
      *

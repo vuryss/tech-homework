@@ -57,7 +57,7 @@ class UpdateCityForecastCommandTest extends KernelTestCase
         $this->assertEquals('Processed city Test City | Test weather today - Test weather tomorrow', $commandOutput);
     }
 
-    public function testCityForecastWithoutTomorrow()
+    public function testCityMissingForecast()
     {
         $kernel = static::createKernel();
         $application = new Application($kernel);
@@ -75,12 +75,6 @@ class UpdateCityForecastCommandTest extends KernelTestCase
                 [
                     (new City())
                         ->setName('Test City')
-                        ->addForecastForDate(
-                            (new Forecast())
-                                ->setDate(new DateTimeImmutable('now'))
-                                ->setWeather('Test weather today'),
-                            new DateTimeImmutable('now')
-                        )
                 ]
             );
 
@@ -88,7 +82,9 @@ class UpdateCityForecastCommandTest extends KernelTestCase
 
         $commandOutput = trim($commandTester->getDisplay());
 
-        $this->assertNotEmpty($commandOutput);
-        $this->assertEquals('Processed city Test City | Test weather today', $commandOutput);
+        $expectedOutput = 'Missing forecast for city: Test City' . PHP_EOL
+            . 'One or more errors occurred during processing of city forecasts';
+
+        $this->assertEquals($expectedOutput, $commandOutput);
     }
 }
