@@ -6,7 +6,6 @@ namespace App\Command;
 
 use App\Exception\AppException;
 use App\Service\CityWeatherForecast;
-use DateTimeImmutable;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -49,25 +48,16 @@ class UpdateCityForecastCommand extends Command
     private function outputCityForecast(OutputInterface $output): void
     {
         foreach ($this->cityWeatherForecast->getCitiesWithForecast() as $city) {
-            $output->write('Processed city ' . $city->getName());
+            $forecastTexts = [];
 
-            $todayForecast = $city->getForecastForDay(new DateTimeImmutable('now'));
-
-            if ($todayForecast) {
-                $output->write(' | ' . $todayForecast->getWeather());
-
-                $tomorrowForecast = $city->getForecastForDay(new DateTimeImmutable('tomorrow'));
-
-                if ($tomorrowForecast) {
-                    $output->write(' - ' . $tomorrowForecast->getWeather());
-                } else {
-                    $this->logger->error('Missing tomorrow\'s forecast for city: ' . $city->getName());
-                }
-            } else {
-                throw new AppException('Missing forecast for city: ' . $city->getName());
+            foreach ($city->getForecastsByDate() as $forecast) {
+                $forecastTexts[] = $forecast->getWeather();
             }
 
-            $output->writeln('');
+            $output->writeln(
+                'Processed city ' . $city->getName()
+                . ' | ' . implode(' - ', $forecastTexts)
+            );
         }
     }
 }

@@ -1,5 +1,7 @@
 <?php
+
 /** @noinspection PhpUndefinedClassInspection */
+
 /** @noinspection PhpParamsInspection */
 
 declare(strict_types=1);
@@ -9,8 +11,8 @@ namespace App\Tests\Service;
 use App\Service\CityWeatherForecast;
 use App\Service\Musement\City;
 use App\Service\Musement\MusementApiInterface;
-use App\Service\Weather\Forecast;
-use App\Service\Weather\WeatherApiInterface;
+use App\Service\Forecast\Forecast;
+use App\Service\Forecast\ForecastApiInterface;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
@@ -18,7 +20,7 @@ class CityWeatherForecastTest extends TestCase
 {
     public function testGetCitiesWithForecast()
     {
-        $mockWeatherApi = $this->createMock(WeatherApiInterface::class);
+        $mockWeatherApi = $this->createMock(ForecastApiInterface::class);
         $mockMusementApi = $this->createMock(MusementApiInterface::class);
 
         $city = (new City())
@@ -44,12 +46,12 @@ class CityWeatherForecastTest extends TestCase
             ->method('getForecastByCoordinates')
             ->with(
                 $this->callback(
-                    function(string $latitude) use ($city) {
+                    function (string $latitude) use ($city) {
                         return $city->getLatitude() === $latitude;
                     }
                 ),
                 $this->callback(
-                    function(string $longitude) use ($city) {
+                    function (string $longitude) use ($city) {
                         return $city->getLongitude() === $longitude;
                     }
                 )

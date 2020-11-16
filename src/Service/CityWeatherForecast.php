@@ -6,14 +6,14 @@ namespace App\Service;
 
 use App\Service\Musement\City;
 use App\Service\Musement\MusementApiInterface;
-use App\Service\Weather\WeatherApiInterface;
+use App\Service\Forecast\ForecastApiInterface;
 
 class CityWeatherForecast
 {
     private MusementApiInterface $musementApi;
-    private WeatherApiInterface $weatherApi;
+    private ForecastApiInterface $weatherApi;
 
-    public function __construct(MusementApiInterface $musementApi, WeatherApiInterface $weatherApi)
+    public function __construct(MusementApiInterface $musementApi, ForecastApiInterface $weatherApi)
     {
         $this->musementApi = $musementApi;
         $this->weatherApi = $weatherApi;
@@ -31,7 +31,7 @@ class CityWeatherForecast
             );
 
             foreach ($forecasts as $forecast) {
-                $city->addForecast($forecast);
+                $city->addForecastForDate($forecast, $forecast->getDate());
             }
 
             yield $city;

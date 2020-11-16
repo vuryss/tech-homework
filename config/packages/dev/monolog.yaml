@@ -2,17 +2,22 @@ monolog:
     handlers:
         main:
             type: stream
-            path: "%kernel.logs_dir%/%kernel.environment%.log"
+            path: "%kernel.logs_dir%/%kernel.environment%/main.log"
             level: debug
-            channels: ["!event"]
-        # uncomment to get logging in your browser
-        # you may have to allow bigger header sizes in your Web server configuration
-        #firephp:
-        #    type: firephp
-        #    level: info
-        #chromephp:
-        #    type: chromephp
-        #    level: info
+            channels: ["!event", "!musement_api", "!weather_api"]
+
+        musement_api:
+            type: stream
+            path: "%kernel.logs_dir%/%kernel.environment%/musement_api.log"
+            level: debug
+            channels: ["musement_api"]
+
+        weather_api:
+            type: stream
+            path: "%kernel.logs_dir%/%kernel.environment%/weather_api.log"
+            level: debug
+            channels: [ "weather_api" ]
+
         console:
             type: console
             process_psr_3_messages: false

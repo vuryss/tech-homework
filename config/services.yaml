@@ -1,6 +1,9 @@
 # This file is the entry point to configure your own services.
 # Files in the packages/ subdirectory configure your dependencies.
 
+imports:
+    - { resource: http_clients.yaml }
+
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
 parameters:
@@ -21,14 +24,30 @@ services:
             - '../src/Kernel.php'
             - '../src/Tests/'
 
-    # controllers are imported separately to make sure services can be injected
-    # as action arguments even if you don't extend any base controller class
-    App\Controller\:
-        resource: '../src/Controller/'
-        tags: ['controller.service_arguments']
-
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
-    App\Service\Weather\WeatherApi:
+    App\Service\Forecast\WeatherApi\WeatherApi:
         arguments:
+            $httpClient: '@weather_api_http_client'
+            $serializer: !service
+                class: Symfony\Component\Serializer\Serializer
+                arguments:
+                    $normalizers:
+                        - !service
+                            class: 'App\Service\Forecast\WeatherApi\WeatherApiForecastNormalizer'
+                            autowire: true
+                    $encoders:
+                        - '@serializer.encoder.json'
             $apiKey: '%env(WEATHER_API_KEY)%'
+
+    App\Service\Musement\MusementApi:
+        arguments:
+            $httpClient: '@musement_api_http_client'
+            $serializer: !service
+                class: Symfony\Component\Serializer\Serializer
+                arguments:
+                    $normalizers:
+                        - '@serializer.denormalizer.array'
+                        - !service
+                            class: 'App\Service\Musement\CityNormalizer'
+                            autowire: true
+                    $encoders:
+                        - '@serializer.encoder.json'
