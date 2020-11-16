@@ -38,6 +38,10 @@ OpenAPI specification can be found here: [OpenAPI spec](openapi-spec.yaml)
 
 ## Implementation details
 
+### Used standards
+
+PSR-3, PSR-4, PSR-11, PSR-12
+
 ### Dates and timezones for forecasts
 
 When fetching forecast for a given city, we have to take into consideration that they might be in a different timezone.

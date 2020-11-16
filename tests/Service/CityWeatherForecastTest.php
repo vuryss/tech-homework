@@ -65,8 +65,10 @@ class CityWeatherForecastTest extends TestCase
         foreach ($cities as $outputCity) {
             $this->assertEquals($city, $outputCity);
 
-            $this->assertEquals($forecast1, $city->getForecastForDay(new DateTimeImmutable('2020-10-20')));
-            $this->assertEquals($forecast2, $city->getForecastForDay(new DateTimeImmutable('2020-10-21')));
+            $forecasts = $city->getForecastsByDate();
+
+            $this->assertEquals($forecast1, $forecasts[$forecast1->getDate()->format('Y-m-d')]);
+            $this->assertEquals($forecast2, $forecasts[$forecast2->getDate()->format('Y-m-d')]);
         }
     }
 }
