@@ -3,12 +3,3 @@ framework:
     secret: '%env(APP_SECRET)%'
     php_errors:
         log: true
-
-    http_client:
-        scoped_clients:
-            musement_api_http_client:
-                base_uri: '%env(MUSEMENT_API_URL)%'
-
-            weather_api_http_client:
-                base_uri: '%env(WEATHER_API_URL)%'
-

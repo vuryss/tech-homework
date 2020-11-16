@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service\Musement;
 
-use App\Service\Weather\Forecast;
+use App\Service\Forecast\Forecast;
 use DateTimeImmutable;
 
 class City
@@ -54,15 +54,20 @@ class City
         return $this;
     }
 
-    public function addForecast(Forecast $forecast): self
+    public function addForecastForDate(Forecast $forecast, DateTimeImmutable $date): self
     {
-        $this->dailyForecast[$forecast->getDate()->format('Y-m-d')] = $forecast;
+        $this->dailyForecast[$date->format('Y-m-d')] = $forecast;
+
+        ksort($this->dailyForecast);
 
         return $this;
     }
 
-    public function getForecastForDay(DateTimeImmutable $date): ?Forecast
+    /**
+     * @return Forecast[]]|null
+     */
+    public function getForecastsByDate(): array
     {
-        return $this->dailyForecast[$date->format('Y-m-d')] ?? null;
+        return $this->dailyForecast ?? [];
     }
 }

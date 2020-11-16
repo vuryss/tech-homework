@@ -1,4 +1,5 @@
 <?php
+
 /** @noinspection PhpUndefinedClassInspection */
 
 declare(strict_types=1);
@@ -6,7 +7,7 @@ declare(strict_types=1);
 namespace App\Tests\Service\Weather;
 
 use App\Exception\AppException;
-use App\Service\Weather\WeatherApi;
+use App\Service\Forecast\WeatherApi;
 use Generator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

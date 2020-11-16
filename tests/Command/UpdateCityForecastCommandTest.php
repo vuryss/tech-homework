@@ -8,7 +8,7 @@ use App\Command\UpdateCityForecastCommand;
 use App\Exception\AppException;
 use App\Service\CityWeatherForecast;
 use App\Service\Musement\City;
-use App\Service\Weather\Forecast;
+use App\Service\Forecast\Forecast;
 use DateTimeImmutable;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;

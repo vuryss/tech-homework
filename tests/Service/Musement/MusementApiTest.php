@@ -1,5 +1,7 @@
 <?php
+
 /** @noinspection PhpStatementHasEmptyBodyInspection */
+
 /** @noinspection PhpUndefinedClassInspection */
 
 declare(strict_types=1);
