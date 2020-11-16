@@ -7,6 +7,7 @@ namespace App\Service\Forecast\WeatherApi;
 use App\Service\Forecast\Forecast;
 use DateTimeImmutable;
 use Exception;
+use Generator;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Serializer\Exception\UnexpectedValueException;
 use Symfony\Component\Serializer\Normalizer\DenormalizerInterface;
@@ -20,6 +21,16 @@ class WeatherApiForecastNormalizer implements DenormalizerInterface
         $this->logger = $weatherApiLogger;
     }
 
+    /**
+     * @throws Exception
+     *
+     * @param string      $type
+     * @param string|null $format
+     * @param array       $context
+     * @param mixed       $data
+     *
+     * @return Forecast[]|Generator
+     */
     public function denormalize($data, string $type, string $format = null, array $context = [])
     {
         if (!isset($data['forecast']['forecastday']) || !is_array($data['forecast']['forecastday'])) {
@@ -42,7 +53,7 @@ class WeatherApiForecastNormalizer implements DenormalizerInterface
     }
 
     /**
-     * @throws UnexpectedValueException
+     * @throws UnexpectedValueException|Exception
      *
      * @param array $forecastDay
      *
@@ -64,17 +75,8 @@ class WeatherApiForecastNormalizer implements DenormalizerInterface
             throw new UnexpectedValueException('Error while retrieving weather data for a city.');
         }
 
-        try {
-            yield (new Forecast())
-                ->setDate((new DateTimeImmutable('@' . $forecastDay['hour'][0]['time_epoch'])))
-                ->setWeather($forecastDay['day']['condition']['text']);
-        } catch (Exception $exception) {
-            $this->logger->error(
-                'Cannot parse timestamp: ' . $forecastDay['hour'][0]['time_epoch'],
-                $forecastDay
-            );
-
-            throw new UnexpectedValueException('Error while retrieving weather data for a city.');
-        }
+        yield (new Forecast())
+            ->setDate((new DateTimeImmutable('@' . $forecastDay['hour'][0]['time_epoch'])))
+            ->setWeather($forecastDay['day']['condition']['text']);
     }
 }

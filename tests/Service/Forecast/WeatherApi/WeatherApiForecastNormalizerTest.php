@@ -6,7 +6,9 @@ namespace App\Tests\Service\Forecast\WeatherApi;
 
 use App\Service\Forecast\Forecast;
 use App\Service\Forecast\WeatherApi\WeatherApiForecastNormalizer;
+use App\Service\Musement\City;
 use DateTimeImmutable;
+use Exception;
 use Generator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -15,7 +17,7 @@ use Symfony\Component\Serializer\Exception\ExceptionInterface;
 class WeatherApiForecastNormalizerTest extends TestCase
 {
     /**
-     * @throws ExceptionInterface
+     * @throws Exception
      */
     public function testValidData()
     {
@@ -54,10 +56,22 @@ class WeatherApiForecastNormalizerTest extends TestCase
 
             $this->assertEquals($forecast->getDate()->getTimestamp(), $resultForecast->getDate()->getTimestamp());
             $this->assertEquals($forecast->getWeather(), $resultForecast->getWeather());
+
+            $result->next();
         }
     }
 
+    public function testSupports()
+    {
+        $mockLogger = $this->createMock(LoggerInterface::class);
+        $normalizer = new WeatherApiForecastNormalizer($mockLogger);
+        $this->assertTrue($normalizer->supportsDenormalization([], Forecast::class . '[]'));
+        $this->assertFalse($normalizer->supportsDenormalization([], City::class));
+    }
+
     /**
+     * @throws Exception
+     *
      * @param $data
      *
      * @dataProvider invalidDataProvider
@@ -71,7 +85,7 @@ class WeatherApiForecastNormalizerTest extends TestCase
         $result = $normalizer->denormalize($data, Forecast::class, 'json');
 
         if ($result instanceof Generator) {
-            $result->current();
+            $result->next();
         }
     }
 
