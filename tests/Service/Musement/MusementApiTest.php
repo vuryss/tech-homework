@@ -9,10 +9,12 @@ declare(strict_types=1);
 namespace App\Tests\Service\Musement;
 
 use App\Exception\AppException;
+use App\Service\Musement\City;
 use App\Service\Musement\MusementApi;
 use Generator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
@@ -25,112 +27,33 @@ class MusementApiTest extends TestCase
     public function testValidResponse()
     {
         $mockHttpClient = $this->createMock(HttpClientInterface::class);
+        $mockSerializer = $this->createMock(SerializerInterface::class);
         $mockLogger = $this->createMock(LoggerInterface::class);
         $mockResponse = $this->createMock(ResponseInterface::class);
+
+        $city = (new City())
+            ->setName('Test city')
+            ->setLatitude('1.2345')
+            ->setLongitude('6.789');
 
         $mockHttpClient
             ->expects($this->once())
             ->method('request')
             ->willReturn($mockResponse);
 
-        $mockResponse
+        $mockSerializer
             ->expects($this->once())
-            ->method('toArray')
-            ->willReturn(
-                [
-                    [
-                        'name' => 'Test city',
-                        'latitude' => 1.1234,
-                        'longitude' => 5.6789,
-                    ]
-                ]
-            );
+            ->method('deserialize')
+            ->willReturn([$city]);
 
-        $musementApi = new MusementApi($mockHttpClient, $mockLogger);
+        $musementApi = new MusementApi($mockHttpClient, $mockSerializer, $mockLogger);
         $cities = $musementApi->getCities();
 
-        foreach ($cities as $city) {
-            $this->assertEquals('Test city', $city->getName());
-            $this->assertEquals('1.1234', $city->getLatitude());
-            $this->assertEquals('5.6789', $city->getLongitude());
+        foreach ($cities as $cityResult) {
+            $this->assertEquals($city->getName(), $cityResult->getName());
+            $this->assertEquals($city->getLatitude(), $cityResult->getLatitude());
+            $this->assertEquals($city->getLongitude(), $cityResult->getLongitude());
         }
-    }
-
-    /**
-     * @param array $invalidResponse
-     *
-     * @dataProvider invalidResponseDataProvider
-     */
-    public function testInvalidResponse(array $invalidResponse)
-    {
-        $this->expectException(AppException::class);
-
-        $mockHttpClient = $this->createMock(HttpClientInterface::class);
-        $mockLogger = $this->createMock(LoggerInterface::class);
-        $mockResponse = $this->createMock(ResponseInterface::class);
-
-        $mockHttpClient
-            ->expects($this->once())
-            ->method('request')
-            ->willReturn($mockResponse);
-
-        $mockResponse
-            ->expects($this->once())
-            ->method('toArray')
-            ->willReturn([$invalidResponse]);
-
-        $musementApi = new MusementApi($mockHttpClient, $mockLogger);
-
-        $cities = $musementApi->getCities();
-
-        if ($cities instanceof Generator) {
-            $cities->current();
-        }
-    }
-
-    public function invalidResponseDataProvider()
-    {
-        return [
-            'Missing Name' => [
-                [
-                    'latitude' => 1.1234,
-                    'longitude' => 5.6789,
-                ]
-            ],
-            'Missing latitude' => [
-                [
-                    'name' => 'Test city',
-                    'longitude' => 5.6789,
-                ]
-            ],
-            'Missing longitude' => [
-                [
-                    'name' => 'Test city',
-                    'latitude' => 1.1234,
-                ]
-            ],
-            'Wrong name format' => [
-                [
-                    'name' => ['Test city'],
-                    'latitude' => 1.1234,
-                    'longitude' => 5.6789,
-                ]
-            ],
-            'Wrong lat format' => [
-                [
-                    'name' => 'Test city',
-                    'latitude' => [1.1234],
-                    'longitude' => 5.6789,
-                ]
-            ],
-            'Wrong long format' => [
-                [
-                    'name' => 'Test city',
-                    'latitude' => 1.1234,
-                    'longitude' => 'asd',
-                ]
-            ],
-        ];
     }
 
     public function testHttpException()
@@ -138,6 +61,7 @@ class MusementApiTest extends TestCase
         $this->expectException(AppException::class);
 
         $mockHttpClient = $this->createMock(HttpClientInterface::class);
+        $mockSerializer = $this->createMock(SerializerInterface::class);
         $mockLogger = $this->createMock(LoggerInterface::class);
 
         $mockHttpClient
@@ -145,7 +69,7 @@ class MusementApiTest extends TestCase
             ->method('request')
             ->willThrowException($this->createMock(HttpExceptionInterface::class));
 
-        $musementApi = new MusementApi($mockHttpClient, $mockLogger);
+        $musementApi = new MusementApi($mockHttpClient, $mockSerializer, $mockLogger);
         $cities = $musementApi->getCities();
 
         if ($cities instanceof Generator) {

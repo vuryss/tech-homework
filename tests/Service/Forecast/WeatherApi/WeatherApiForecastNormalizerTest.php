@@ -1,98 +1,81 @@
 <?php
 
-/** @noinspection PhpUndefinedClassInspection */
-
 declare(strict_types=1);
 
-namespace App\Tests\Service\Weather;
+namespace App\Tests\Service\Forecast\WeatherApi;
 
-use App\Exception\AppException;
-use App\Service\Forecast\WeatherApi;
+use App\Service\Forecast\Forecast;
+use App\Service\Forecast\WeatherApi\WeatherApiForecastNormalizer;
+use DateTimeImmutable;
 use Generator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Contracts\HttpClient\ResponseInterface;
+use Symfony\Component\Serializer\Exception\ExceptionInterface;
 
-class WeatherApiTest extends TestCase
+class WeatherApiForecastNormalizerTest extends TestCase
 {
     /**
-     * @throws AppException
+     * @throws ExceptionInterface
      */
-    public function testValidResponse()
+    public function testValidData()
     {
-        $mockHttpClient = $this->createMock(HttpClientInterface::class);
-        $mockLogger = $this->createMock(LoggerInterface::class);
-        $mockResponse = $this->createMock(ResponseInterface::class);
+        $date = new DateTimeImmutable('now');
 
-        $mockHttpClient
-            ->expects($this->once())
-            ->method('request')
-            ->willReturn($mockResponse);
+        $forecast = (new Forecast())
+            ->setWeather('Some weather')
+            ->setDate($date);
 
-        $mockResponse
-            ->expects($this->once())
-            ->method('toArray')
-            ->willReturn(
-                [
-                    'forecast' => [
-                        'forecastday' => [
+        $apiResponseDecoded = [
+            'forecast' => [
+                'forecastday' => [
+                    0 => [
+                        'day' => [
+                            'condition' => [
+                                'text' => $forecast->getWeather(),
+                            ],
+                        ],
+                        'hour' => [
                             0 => [
-                                'date_epoch' => 1604966400,
-                                'day' => [
-                                    'condition' => [
-                                        'text' => 'Some weather',
-                                    ],
-                                ],
+                                'time_epoch' => $forecast->getDate()->getTimestamp(),
                             ],
                         ],
                     ],
-                ]
-            );
+                ],
+            ],
+        ];
 
-        $musementApi = new WeatherApi($mockHttpClient, $mockLogger, 'api-key');
-        $forecasts = $musementApi->getForecastByCoordinates('1.234', '5.678');
+        $mockLogger = $this->createMock(LoggerInterface::class);
 
-        foreach ($forecasts as $forecast) {
-            $this->assertEquals('2020-11-10', $forecast->getDate()->format('Y-m-d'));
-            $this->assertEquals('Some weather', $forecast->getWeather());
+        $normalizer = new WeatherApiForecastNormalizer($mockLogger);
+        $result = $normalizer->denormalize($apiResponseDecoded, Forecast::class, 'json');
+
+        if ($result instanceof Generator) {
+            $resultForecast = $result->current();
+
+            $this->assertEquals($forecast->getDate()->getTimestamp(), $resultForecast->getDate()->getTimestamp());
+            $this->assertEquals($forecast->getWeather(), $resultForecast->getWeather());
         }
     }
 
     /**
-     * @throws AppException
+     * @param $data
      *
-     * @param mixed $invalidResponse
-     *
-     * @dataProvider invalidResponseDataProvider
+     * @dataProvider invalidDataProvider
      */
-    public function testInvalidResponse($invalidResponse)
+    public function testInvalidDate($data)
     {
-        $this->expectException(AppException::class);
-
-        $mockHttpClient = $this->createMock(HttpClientInterface::class);
+        $this->expectException(ExceptionInterface::class);
         $mockLogger = $this->createMock(LoggerInterface::class);
-        $mockResponse = $this->createMock(ResponseInterface::class);
 
-        $mockHttpClient
-            ->expects($this->once())
-            ->method('request')
-            ->willReturn($mockResponse);
+        $normalizer = new WeatherApiForecastNormalizer($mockLogger);
+        $result = $normalizer->denormalize($data, Forecast::class, 'json');
 
-        $mockResponse
-            ->expects($this->once())
-            ->method('toArray')
-            ->willReturn($invalidResponse);
-
-        $musementApi = new WeatherApi($mockHttpClient, $mockLogger, 'api-key');
-        $forecasts = $musementApi->getForecastByCoordinates('1.234', '5.678');
-
-        if ($forecasts instanceof Generator) {
-            $forecasts->current();
+        if ($result instanceof Generator) {
+            $result->current();
         }
     }
 
-    public function invalidResponseDataProvider()
+    public function invalidDataProvider()
     {
         return [
             'Missing forecast' => [
@@ -132,10 +115,14 @@ class WeatherApiTest extends TestCase
                     'forecast' => [
                         'forecastday' => [
                             0 => [
-                                'date_epoch' => 'asd',
                                 'day' => [
                                     'condition' => [
                                         'text' => 'Some weather',
+                                    ],
+                                ],
+                                'hour' => [
+                                    0 => [
+                                        'time_epoch' => 'asd',
                                     ],
                                 ],
                             ],
@@ -148,10 +135,14 @@ class WeatherApiTest extends TestCase
                     'forecast' => [
                         'forecastday' => [
                             0 => [
-                                'date_epoch' => -654654,
                                 'day' => [
                                     'condition' => [
                                         'text' => 'Some weather',
+                                    ],
+                                ],
+                                'hour' => [
+                                    0 => [
+                                        'time_epoch' => -123132,
                                     ],
                                 ],
                             ],
@@ -164,8 +155,12 @@ class WeatherApiTest extends TestCase
                     'forecast' => [
                         'forecastday' => [
                             0 => [
-                                'date_epoch' => 1604966400,
                                 'day' => [
+                                ],
+                                'hour' => [
+                                    0 => [
+                                        'time_epoch' => 1604966400,
+                                    ],
                                 ],
                             ],
                         ],
@@ -177,10 +172,14 @@ class WeatherApiTest extends TestCase
                     'forecast' => [
                         'forecastday' => [
                             0 => [
-                                'date_epoch' => 1604966400,
                                 'day' => [
                                     'condition' => [
                                         'text' => ['Some weather'],
+                                    ],
+                                ],
+                                'hour' => [
+                                    0 => [
+                                        'time_epoch' => 1604966400,
                                     ],
                                 ],
                             ],
