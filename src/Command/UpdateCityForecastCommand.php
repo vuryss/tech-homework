@@ -9,6 +9,7 @@ use App\Service\CityWeatherForecast;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class UpdateCityForecastCommand extends Command
@@ -26,10 +27,30 @@ class UpdateCityForecastCommand extends Command
         $this->logger = $logger;
     }
 
+    protected function configure()
+    {
+        $this
+            ->setDescription('Fetches a list of cities from Musement API and their forecasts for 2 days.')
+            ->addOption(
+                'forecastDays',
+                'd',
+                InputOption::VALUE_REQUIRED,
+                'Number of days to fetch Forecast for',
+                2
+            );
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
-            $this->outputCityForecast($output);
+            $days = $input->getOption('forecastDays');
+            $days = ctype_digit($days) ? (int) $days : 2;
+
+            if ($days < 1) {
+                throw new AppException('Cannot fetch forecast for less than 1 days');
+            }
+
+            $this->outputCityForecastForDays($output, $days);
         } catch (AppException $exception) {
             $output->writeln('');
             $output->writeln('<error>' . $exception->getMessage() . '</error>');
@@ -43,20 +64,23 @@ class UpdateCityForecastCommand extends Command
     /**
      * @throws AppException
      *
+     * @param int             $days
      * @param OutputInterface $output
      */
-    private function outputCityForecast(OutputInterface $output): void
+    private function outputCityForecastForDays(OutputInterface $output, int $days): void
     {
-        foreach ($this->cityWeatherForecast->getCitiesWithForecast() as $city) {
+        foreach ($this->cityWeatherForecast->getCitiesWithForecastForDays($days) as $city) {
             $forecastTexts = [];
 
-            foreach ($city->getForecastsByDate() as $forecast) {
-                $forecastTexts[] = $forecast->getWeather();
+            foreach ($city->getForecasts() as $forecast) {
+                $forecastTexts[$forecast->getDate()->format('Ymd')] = $forecast->getWeather();
             }
 
-            if (count($forecastTexts) !== 2) {
-                throw new AppException('Missing forecast for city: ' . $city->getName());
+            if (count($forecastTexts) !== $days) {
+                throw new AppException('Missing one or more forecasts for city: ' . $city->getName());
             }
+
+            ksort($forecastTexts);
 
             $output->writeln(
                 'Processed city ' . $city->getName()

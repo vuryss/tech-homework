@@ -43,29 +43,17 @@ class CityWeatherForecastTest extends TestCase
 
         $mockWeatherApi
             ->expects($this->once())
-            ->method('getForecastByCoordinates')
-            ->with(
-                $this->callback(
-                    function (string $latitude) use ($city) {
-                        return $city->getLatitude() === $latitude;
-                    }
-                ),
-                $this->callback(
-                    function (string $longitude) use ($city) {
-                        return $city->getLongitude() === $longitude;
-                    }
-                )
-            )
+            ->method('getCityForecasts')
             ->willReturn([$forecast1, $forecast2]);
 
         $cityWeatherForecast = new CityWeatherForecast($mockMusementApi, $mockWeatherApi);
 
-        $cities = $cityWeatherForecast->getCitiesWithForecast();
+        $cities = $cityWeatherForecast->getCitiesWithForecastForDays(2);
 
         foreach ($cities as $outputCity) {
             $this->assertEquals($city, $outputCity);
 
-            $forecasts = $city->getForecastsByDate();
+            $forecasts = $city->getForecasts();
 
             $this->assertEquals($forecast1, $forecasts[$forecast1->getDate()->format('Y-m-d')]);
             $this->assertEquals($forecast2, $forecasts[$forecast2->getDate()->format('Y-m-d')]);

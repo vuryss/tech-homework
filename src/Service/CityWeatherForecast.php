@@ -20,18 +20,17 @@ class CityWeatherForecast
     }
 
     /**
+     * @param int $days
+     *
      * @return City[]
      */
-    public function getCitiesWithForecast(): iterable
+    public function getCitiesWithForecastForDays(int $days): iterable
     {
         foreach ($this->musementApi->getCities() as $city) {
-            $forecasts = $this->weatherApi->getForecastByCoordinates(
-                $city->getLatitude(),
-                $city->getLongitude()
-            );
+            $forecasts = $this->weatherApi->getCityForecasts($city, $days);
 
             foreach ($forecasts as $forecast) {
-                $city->addForecastForDate($forecast, $forecast->getDate());
+                $city->addForecast($forecast);
             }
 
             yield $city;

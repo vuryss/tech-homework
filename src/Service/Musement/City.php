@@ -54,11 +54,9 @@ class City
         return $this;
     }
 
-    public function addForecastForDate(Forecast $forecast, DateTimeImmutable $date): self
+    public function addForecast(Forecast $forecast): self
     {
-        $this->dailyForecast[$date->format('Y-m-d')] = $forecast;
-
-        ksort($this->dailyForecast);
+        $this->dailyForecast[$forecast->getDate()->format('Y-m-d')] = $forecast;
 
         return $this;
     }
@@ -66,7 +64,7 @@ class City
     /**
      * @return Forecast[]]|null
      */
-    public function getForecastsByDate(): array
+    public function getForecasts(): array
     {
         return $this->dailyForecast ?? [];
     }
