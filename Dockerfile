@@ -5,6 +5,11 @@ RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y zip unzip wget curl
 
+# Install extensions
+ADD https://raw.githubusercontent.com/mlocati/docker-php-extension-installer/master/install-php-extensions /usr/local/bin/
+RUN chmod +x /usr/local/bin/install-php-extensions && sync && \
+    install-php-extensions xdebug
+
 # Install composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 

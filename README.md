@@ -20,6 +20,9 @@ Add your weather API key in `.env.local` file lie this:
 
 `WEATHER_API_KEY=my-api-key`
 
+You can create a free account here: [Weather API](https://www.weatherapi.com/)
+to obtain a token.
+
 ## Usage
 
 ### Installation
@@ -73,7 +76,7 @@ Then from inside the container you can execute the collowing commands:
     
 6. Run PHP Code Sniffer validations
 
-    `vendor/bin/phpcs`
+    `vendor/bin/phpcs -p`
     
 7. Run PHP CS Fixer
 
