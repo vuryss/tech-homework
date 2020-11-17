@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Service\Musement\City;
 use App\Service\Musement\MusementApiInterface;
 use App\Service\Forecast\ForecastApiInterface;
+use React\Promise\PromiseInterface;
+
+use function React\Promise\all;
 
 class CityWeatherForecast
 {
@@ -22,18 +24,34 @@ class CityWeatherForecast
     /**
      * @param int $days
      *
-     * @return City[]
+     * @return PromiseInterface
      */
-    public function getCitiesWithForecastForDays(int $days): iterable
+    public function getCitiesWithForecastForDays(int $days): PromiseInterface
     {
-        foreach ($this->musementApi->getCities() as $city) {
-            $forecasts = $this->weatherApi->getCityForecasts($city, $days);
+        return $this
+            ->musementApi
+            ->getCities()
+            ->then(
+                function (iterable $cities) use ($days) {
+                    $forecastPromises = [];
 
-            foreach ($forecasts as $forecast) {
-                $city->addForecast($forecast);
-            }
+                    foreach ($cities as $city) {
+                        $forecastPromises[] = $this
+                            ->weatherApi
+                            ->getCityForecasts($city, $days)
+                            ->then(
+                                function (iterable $forecasts) use ($city) {
+                                    foreach ($forecasts as $forecast) {
+                                        $city->addForecast($forecast);
+                                    }
 
-            yield $city;
-        }
+                                    return $city;
+                                }
+                            );
+                    }
+
+                    return all($forecastPromises);
+                }
+            );
     }
 }

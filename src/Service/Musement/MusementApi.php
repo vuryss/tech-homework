@@ -5,20 +5,21 @@ declare(strict_types=1);
 namespace App\Service\Musement;
 
 use App\Exception\AppException;
+use Exception;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
+use React\Http\Browser;
+use React\Promise\PromiseInterface;
 use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Contracts\HttpClient\Exception\ExceptionInterface as HttpClientExceptionInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class MusementApi implements MusementApiInterface
 {
-    private HttpClientInterface $httpClient;
+    private Browser $httpClient;
     private SerializerInterface $serializer;
     private LoggerInterface $logger;
 
     public function __construct(
-        HttpClientInterface $httpClient,
+        Browser $httpClient,
         SerializerInterface $serializer,
         LoggerInterface $logger
     ) {
@@ -27,24 +28,51 @@ class MusementApi implements MusementApiInterface
         $this->logger = $logger;
     }
 
+    public function getCities(): PromiseInterface
+    {
+        $url = 'https://api.musement.com/api/v3/cities';
+
+        $this->logger->info('Sending GET request to: ' . $url);
+
+        return $this
+            ->httpClient
+            ->get('https://api.musement.com/api/v3/cities')
+            ->then(
+                fn (ResponseInterface $response) => $this->handleHttpSuccess($response),
+                fn (Exception $exception) => $this->handleHttpError($exception)
+            );
+    }
+
     /**
-     * @noinspection PhpRedundantCatchClauseInspection
+     * @param ResponseInterface $response
      *
      * @return City[]
+     */
+    private function handleHttpSuccess(ResponseInterface $response): array
+    {
+        $this
+            ->logger
+            ->info($response->getStatusCode() . ' Response received.');
+
+        return $this->serializer->deserialize(
+            $response->getBody()->getContents(),
+            City::class . '[]',
+            'json'
+        );
+    }
+
+    /**
+     * @param Exception $exception
+     *
      * @throws AppException
      */
-    public function getCities(): iterable
+    private function handleHttpError(Exception $exception): void
     {
-        try {
-            $response = $this->httpClient->request('GET', '/api/v3/cities');
+        $this->logger->error(
+            'Error while retrieving cities from Musement API.',
+            ['exception' => $exception]
+        );
 
-            yield from $this->serializer->deserialize($response->getContent(), City::class . '[]', 'json');
-        } catch (HttpClientExceptionInterface | SerializerExceptionInterface $exception) {
-            $this->logger->error(
-                'Error while retrieving cities from Musement API.',
-                ['exception' => $exception]
-            );
-            throw new AppException('Error while retrieving weather data for a city.');
-        }
+        throw new AppException('Error while retrieving cities from Musement API.', 0, $exception);
     }
 }

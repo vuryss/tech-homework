@@ -11,42 +11,48 @@ namespace App\Tests\Service\Musement;
 use App\Exception\AppException;
 use App\Service\Musement\City;
 use App\Service\Musement\MusementApi;
-use Generator;
-use PHPUnit\Framework\TestCase;
+use App\Tests\ReactTestCast;
+use Exception;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
+use React\Http\Browser;
 use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Contracts\HttpClient\ResponseInterface;
 
-class MusementApiTest extends TestCase
+use function React\Promise\reject;
+use function React\Promise\resolve;
+
+class MusementApiTest extends ReactTestCast
 {
-    /**
-     * @throws AppException
-     */
     public function testValidResponse()
     {
-        $mockHttpClient = $this->createMock(HttpClientInterface::class);
         $mockSerializer = $this->createMock(SerializerInterface::class);
         $mockLogger = $this->createMock(LoggerInterface::class);
-        $mockResponse = $this->createMock(ResponseInterface::class);
+        $browser = $this->createMock(Browser::class);
+        $response = $this->createMock(ResponseInterface::class);
+        $stream = $this->createMock(StreamInterface::class);
 
         $city = (new City())
             ->setName('Test city')
             ->setLatitude('1.2345')
             ->setLongitude('6.789');
 
-        $mockHttpClient
+        $browser
             ->expects($this->once())
-            ->method('request')
-            ->willReturn($mockResponse);
+            ->method('get')
+            ->willReturn(resolve($response));
+
+        $response
+            ->expects($this->once())
+            ->method('getBody')
+            ->willReturn($stream);
 
         $mockSerializer
             ->expects($this->once())
             ->method('deserialize')
             ->willReturn([$city]);
 
-        $musementApi = new MusementApi($mockHttpClient, $mockSerializer, $mockLogger);
+        $musementApi = new MusementApi($browser, $mockSerializer, $mockLogger);
         $cities = $musementApi->getCities();
 
         foreach ($cities as $cityResult) {
@@ -58,22 +64,19 @@ class MusementApiTest extends TestCase
 
     public function testHttpException()
     {
-        $this->expectException(AppException::class);
-
-        $mockHttpClient = $this->createMock(HttpClientInterface::class);
         $mockSerializer = $this->createMock(SerializerInterface::class);
         $mockLogger = $this->createMock(LoggerInterface::class);
+        $browser = $this->createMock(Browser::class);
+        $exception = new Exception('Some error');
 
-        $mockHttpClient
+        $browser
             ->expects($this->once())
-            ->method('request')
-            ->willThrowException($this->createMock(HttpExceptionInterface::class));
+            ->method('get')
+            ->willReturn(reject($exception));
 
-        $musementApi = new MusementApi($mockHttpClient, $mockSerializer, $mockLogger);
-        $cities = $musementApi->getCities();
+        $musementApi = new MusementApi($browser, $mockSerializer, $mockLogger);
+        $result = $musementApi->getCities();
 
-        if ($cities instanceof Generator) {
-            $cities->current();
-        }
+        $this->assertPromiseFailsWithException($result, AppException::class);
     }
 }

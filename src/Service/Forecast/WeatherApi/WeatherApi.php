@@ -8,21 +8,22 @@ use App\Exception\AppException;
 use App\Service\Forecast\Forecast;
 use App\Service\Forecast\ForecastApiInterface;
 use App\Service\Musement\City;
+use Exception;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
+use React\Http\Browser;
+use React\Promise\PromiseInterface;
 use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Contracts\HttpClient\Exception\ExceptionInterface as HttpClientExceptionInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class WeatherApi implements ForecastApiInterface
 {
-    private HttpClientInterface $httpClient;
+    private Browser $httpClient;
     private SerializerInterface $serializer;
     private LoggerInterface $logger;
     private string $apiKey;
 
     public function __construct(
-        HttpClientInterface $httpClient,
+        Browser $httpClient,
         SerializerInterface $serializer,
         LoggerInterface $logger,
         string $apiKey
@@ -34,16 +35,12 @@ class WeatherApi implements ForecastApiInterface
     }
 
     /**
-     * @noinspection PhpRedundantCatchClauseInspection
-     *
-     * @throws AppException
-     *
      * @param City $city
      * @param int  $days
      *
-     * @return Forecast[]
+     * @return PromiseInterface
      */
-    public function getCityForecasts(City $city, int $days = 1): iterable
+    public function getCityForecasts(City $city, int $days = 1): PromiseInterface
     {
         $queryParameters = [
             'key' => $this->apiKey,
@@ -51,22 +48,51 @@ class WeatherApi implements ForecastApiInterface
             'q' => $city->getLatitude() . ',' . $city->getLongitude(),
         ];
 
-        try {
-            $response = $this->httpClient->request(
-                'GET',
-                '/v1/forecast.json',
-                [
-                    'query' => $queryParameters
-                ]
-            );
+        $url = 'https://api.weatherapi.com/v1/forecast.json?' . http_build_query($queryParameters);
 
-            yield from $this->serializer->deserialize($response->getContent(), Forecast::class . '[]', 'json');
-        } catch (HttpClientExceptionInterface | SerializerExceptionInterface $exception) {
-            $this->logger->error(
-                'Error while retrieving weather data for a city.',
-                ['exception' => $exception]
+        $this->logger->info('Sending GET request to: ' . $url);
+
+        return $this
+            ->httpClient
+            ->get('https://api.weatherapi.com/v1/forecast.json?' . http_build_query($queryParameters))
+            ->then(
+                fn (ResponseInterface $response) => $this->handleHttpSuccess($response),
+                fn (Exception $exception) => $this->handleHttpError($exception)
             );
-            throw new AppException('Error while retrieving weather data for a city.');
-        }
+    }
+
+    /**
+     * @param ResponseInterface $response
+     *
+     * @return Forecast[]
+     */
+    private function handleHttpSuccess(ResponseInterface $response): array
+    {
+        $this
+            ->logger
+            ->info($response->getStatusCode() . ' Response received.');
+
+        return $this
+            ->serializer
+            ->deserialize(
+                $response->getBody()->getContents(),
+                Forecast::class . '[]',
+                'json'
+            );
+    }
+
+    /**
+     * @param Exception $exception
+     *
+     * @throws AppException
+     */
+    private function handleHttpError(Exception $exception): void
+    {
+        $this->logger->error(
+            'Error while retrieving weather data for a city.',
+            ['exception' => $exception]
+        );
+
+        throw new AppException('Error while retrieving weather data for a city.', 0, $exception);
     }
 }
