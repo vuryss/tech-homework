@@ -1,7 +1,11 @@
 # City weather processor
 
+![CI](https://github.com/vuryss/tech-homework/workflows/CI/badge.svg?branch=master)
+
 Retrieves a list of cities from Musement API and for each of them
 fetches a weather forecast for predefined number of days (default 2).
+
+Utilized the power of ReactPHP to make all the calls to the external APIs asynchronous.
 
 Outputs the results in the terminal.
 
@@ -81,6 +85,17 @@ OpenAPI specification can be found here: [OpenAPI spec](openapi-spec.yaml)
 
 
 ## Implementation details
+
+### Github Actions - CI
+
+- Integrated with GitHub CI - to check composer libraries installation, unit tests and code quality on commit
+- Configuration for GitHub actions can be found in: [GitHub Action Spec](.github/workflows/main.yml)  
+
+### ReactPHP
+
+- Uses ReactPHP Loop, Promises and Http client to send the API request simultaneously in a non-blocking manner.
+- No extensions - native PHP implementation is used
+- Response is more than 20 times compared to non-asynchronous flow 
 
 ### Docker
 
