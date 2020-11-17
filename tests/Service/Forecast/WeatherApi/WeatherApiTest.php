@@ -9,6 +9,7 @@ namespace App\Tests\Service\Forecast\WeatherApi;
 use App\Exception\AppException;
 use App\Service\Forecast\Forecast;
 use App\Service\Forecast\WeatherApi\WeatherApi;
+use App\Service\Musement\City;
 use DateTimeImmutable;
 use Generator;
 use PHPUnit\Framework\TestCase;
@@ -32,6 +33,10 @@ class WeatherApiTest extends TestCase
 
         $date = new DateTimeImmutable('now');
 
+        $city = (new City())
+            ->setLatitude('1.234')
+            ->setLongitude('5.678');
+
         $forecast = (new Forecast())
             ->setWeather('Some weather')
             ->setDate($date);
@@ -47,7 +52,7 @@ class WeatherApiTest extends TestCase
             ->willReturn([$forecast]);
 
         $musementApi = new WeatherApi($mockHttpClient, $mockSerializer, $mockLogger, 'api-key');
-        $forecasts = $musementApi->getForecastByCoordinates('1.234', '5.678');
+        $forecasts = $musementApi->getCityForecasts($city, 1);
 
         foreach ($forecasts as $forecastResult) {
             $this->assertEquals(
@@ -68,6 +73,10 @@ class WeatherApiTest extends TestCase
 
         $this->expectException(AppException::class);
 
+        $city = (new City())
+            ->setLatitude('1.234')
+            ->setLongitude('5.678');
+
         $mockHttpClient
             ->expects($this->once())
             ->method('request')
@@ -79,7 +88,7 @@ class WeatherApiTest extends TestCase
             ->willThrowException($mockException);
 
         $musementApi = new WeatherApi($mockHttpClient, $mockSerializer, $mockLogger, 'api-key');
-        $result = $musementApi->getForecastByCoordinates('1.234', '5.678');
+        $result = $musementApi->getCityForecasts($city, 1);
 
         if ($result instanceof Generator) {
             $result->current();

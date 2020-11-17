@@ -29,22 +29,20 @@ class UpdateCityForecastCommandTest extends KernelTestCase
         $commandTester = new CommandTester($command);
 
         $mockCityWeatherForecast
-            ->method('getCitiesWithForecast')
+            ->method('getCitiesWithForecastForDays')
             ->willReturn(
                 [
                     (new City())
                         ->setName('Test City')
-                        ->addForecastForDate(
+                        ->addForecast(
                             (new Forecast())
                                 ->setDate(new DateTimeImmutable('now'))
                                 ->setWeather('Test weather today'),
-                            new DateTimeImmutable('now')
                         )
-                        ->addForecastForDate(
+                        ->addForecast(
                             (new Forecast())
                                 ->setDate(new DateTimeImmutable('tomorrow'))
                                 ->setWeather('Test weather tomorrow'),
-                            new DateTimeImmutable('tomorrow')
                         )
                 ]
             );
@@ -70,7 +68,7 @@ class UpdateCityForecastCommandTest extends KernelTestCase
         $commandTester = new CommandTester($command);
 
         $mockCityWeatherForecast
-            ->method('getCitiesWithForecast')
+            ->method('getCitiesWithForecastForDays')
             ->willReturn(
                 [
                     (new City())
@@ -82,7 +80,38 @@ class UpdateCityForecastCommandTest extends KernelTestCase
 
         $commandOutput = trim($commandTester->getDisplay());
 
-        $expectedOutput = 'Missing forecast for city: Test City' . PHP_EOL
+        $expectedOutput = 'Missing one or more forecasts for city: Test City' . PHP_EOL
+            . 'One or more errors occurred during processing of city forecasts';
+
+        $this->assertEquals($expectedOutput, $commandOutput);
+    }
+
+    public function testInvalidDaysForecast()
+    {
+        $kernel = static::createKernel();
+        $application = new Application($kernel);
+
+        $mockCityWeatherForecast = $this->createMock(CityWeatherForecast::class);
+        $logger = $this->createMock(LoggerInterface::class);
+
+        $application->add(new UpdateCityForecastCommand($mockCityWeatherForecast, $logger));
+        $command = $application->find('app:update-city-forecast');
+        $commandTester = new CommandTester($command);
+
+        $mockCityWeatherForecast
+            ->method('getCitiesWithForecastForDays')
+            ->willReturn(
+                [
+                    (new City())
+                        ->setName('Test City')
+                ]
+            );
+
+        $commandTester->execute(['--forecastDays' => '0']);
+
+        $commandOutput = trim($commandTester->getDisplay());
+
+        $expectedOutput = 'Cannot fetch forecast for less than 1 days' . PHP_EOL
             . 'One or more errors occurred during processing of city forecasts';
 
         $this->assertEquals($expectedOutput, $commandOutput);

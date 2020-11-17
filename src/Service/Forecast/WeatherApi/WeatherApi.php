@@ -7,6 +7,7 @@ namespace App\Service\Forecast\WeatherApi;
 use App\Exception\AppException;
 use App\Service\Forecast\Forecast;
 use App\Service\Forecast\ForecastApiInterface;
+use App\Service\Musement\City;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface as SerializerExceptionInterface;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -35,18 +36,19 @@ class WeatherApi implements ForecastApiInterface
     /**
      * @noinspection PhpRedundantCatchClauseInspection
      *
-     * @param string $longitude
-     * @param string $latitude
+     * @throws AppException
+     *
+     * @param City $city
+     * @param int  $days
      *
      * @return Forecast[]
-     * @throws AppException
      */
-    public function getForecastByCoordinates(string $latitude, string $longitude): iterable
+    public function getCityForecasts(City $city, int $days = 1): iterable
     {
         $queryParameters = [
             'key' => $this->apiKey,
-            'days' => 2,
-            'q' => $latitude . ',' . $longitude,
+            'days' => $days,
+            'q' => $city->getLatitude() . ',' . $city->getLongitude(),
         ];
 
         try {
