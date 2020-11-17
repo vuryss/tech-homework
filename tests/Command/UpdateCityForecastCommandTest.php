@@ -111,10 +111,12 @@ class UpdateCityForecastCommandTest extends KernelTestCase
         $mockCityWeatherForecast
             ->method('getCitiesWithForecastForDays')
             ->willReturn(
-                [
-                    (new City())
-                        ->setName('Test City')
-                ]
+                resolve(
+                    [
+                        (new City())
+                            ->setName('Test City'),
+                    ]
+                )
             );
 
         $commandTester->execute(['--forecastDays' => '0']);

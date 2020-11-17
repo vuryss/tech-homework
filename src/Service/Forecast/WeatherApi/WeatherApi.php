@@ -56,26 +56,43 @@ class WeatherApi implements ForecastApiInterface
             ->httpClient
             ->get('https://api.weatherapi.com/v1/forecast.json?' . http_build_query($queryParameters))
             ->then(
-                function (ResponseInterface $response) {
-                    $this
-                        ->logger
-                        ->info($response->getStatusCode() . ' Response received.');
-
-                    return $this
-                        ->serializer
-                        ->deserialize(
-                            $response->getBody()->getContents(),
-                            Forecast::class . '[]',
-                            'json'
-                        );
-                },
-                function (Exception $exception) {
-                    $this->logger->error(
-                        'Error while retrieving weather data for a city.',
-                        ['exception' => $exception]
-                    );
-                    throw new AppException('Error while retrieving weather data for a city.');
-                }
+                fn (ResponseInterface $response) => $this->handleHttpSuccess($response),
+                fn (Exception $exception) => $this->handleHttpError($exception)
             );
+    }
+
+    /**
+     * @param ResponseInterface $response
+     *
+     * @return Forecast[]
+     */
+    private function handleHttpSuccess(ResponseInterface $response): array
+    {
+        $this
+            ->logger
+            ->info($response->getStatusCode() . ' Response received.');
+
+        return $this
+            ->serializer
+            ->deserialize(
+                $response->getBody()->getContents(),
+                Forecast::class . '[]',
+                'json'
+            );
+    }
+
+    /**
+     * @param Exception $exception
+     *
+     * @throws AppException
+     */
+    private function handleHttpError(Exception $exception): void
+    {
+        $this->logger->error(
+            'Error while retrieving weather data for a city.',
+            ['exception' => $exception]
+        );
+
+        throw new AppException('Error while retrieving weather data for a city.', 0, $exception);
     }
 }

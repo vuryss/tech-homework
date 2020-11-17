@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Exception\AppException;
 use App\Service\CityWeatherForecast;
+use App\Service\Musement\City;
 use Exception;
 use Psr\Log\LoggerInterface;
 use React\EventLoop\LoopInterface;
@@ -22,6 +23,8 @@ class UpdateCityForecastCommand extends Command
     private CityWeatherForecast $cityWeatherForecast;
     private LoggerInterface $logger;
     private int $result;
+    private int $days;
+    private OutputInterface $output;
 
     public function __construct(LoopInterface $loop, CityWeatherForecast $cityWeatherForecast, LoggerInterface $logger)
     {
@@ -31,6 +34,7 @@ class UpdateCityForecastCommand extends Command
         $this->cityWeatherForecast = $cityWeatherForecast;
         $this->logger = $logger;
         $this->result = Command::SUCCESS;
+        $this->days = 2;
     }
 
     protected function configure()
@@ -48,63 +52,69 @@ class UpdateCityForecastCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $days = $input->getOption('forecastDays');
-        $days = ctype_digit($days) ? (int) $days : 2;
+        $this->output = $output;
 
-        if ($days < 1) {
+        $days = $input->getOption('forecastDays');
+        $this->days = ctype_digit($days) ? (int) $days : 2;
+
+        if ($this->days < 1) {
             $output->writeln('');
             $output->writeln('<error>Cannot fetch forecast for less than 1 days</error>');
             return Command::FAILURE;
         }
 
-        $this->outputCityForecastForDays($output, $days);
+        $this->processCityForecast();
 
         $this->loop->run();
 
         return $this->result;
     }
 
-    /**
-     * @param int             $days
-     * @param OutputInterface $output
-     */
-    private function outputCityForecastForDays(OutputInterface $output, int $days): void
+    private function processCityForecast(): void
     {
         $this
             ->cityWeatherForecast
-            ->getCitiesWithForecastForDays($days)
-            ->then(
-                function (iterable $cities) use ($output, $days) {
-                    foreach ($cities as $city) {
-                        $forecastTexts = [];
+            ->getCitiesWithForecastForDays($this->days)
+            ->then(fn ($cities) => $this->outputCities($cities))
+            ->then(null, fn (Exception $exception) => $this->handleException($exception));
+    }
 
-                        foreach ($city->getForecasts() as $forecast) {
-                            $forecastTexts[$forecast->getDate()->format('Ymd')] = $forecast->getWeather();
-                        }
+    /**
+     * @param City[] $cities
+     *
+     * @throws AppException
+     */
+    private function outputCities(iterable $cities): void
+    {
+        foreach ($cities as $city) {
+            $forecastTexts = [];
 
-                        if (count($forecastTexts) !== $days) {
-                            throw new AppException('Missing one or more forecasts for city: ' . $city->getName());
-                        }
+            foreach ($city->getForecasts() as $forecast) {
+                $forecastTexts[$forecast->getDate()->format('Ymd')] = $forecast->getWeather();
+            }
 
-                        ksort($forecastTexts);
+            if (count($forecastTexts) !== $this->days) {
+                throw new AppException('Missing one or more forecasts for city: ' . $city->getName());
+            }
 
-                        $output->writeln(
-                            'Processed city ' . $city->getName()
-                            . ' | ' . implode(' - ', $forecastTexts)
-                        );
-                    }
+            ksort($forecastTexts);
 
-                    $this->result = Command::SUCCESS;
-                }
-            )
-            ->then(
-                null,
-                function (Exception $exception) use ($output) {
-                    $output->writeln('');
-                    $output->writeln('<error>' . $exception->getMessage() . '</error>');
-                    $output->writeln('<error>One or more errors occurred during processing of city forecasts</error>');
-                    $this->result = Command::FAILURE;
-                }
+            $this->output->writeln(
+                'Processed city ' . $city->getName()
+                . ' | ' . implode(' - ', $forecastTexts)
             );
+        }
+
+        $this->result = Command::SUCCESS;
+    }
+
+    private function handleException(Exception $exception): void
+    {
+        $this->output->writeln('');
+        $this->output->writeln('<error>' . $exception->getMessage() . '</error>');
+        $this->output->writeln(
+            '<error>One or more errors occurred during processing of city forecasts</error>'
+        );
+        $this->result = Command::FAILURE;
     }
 }

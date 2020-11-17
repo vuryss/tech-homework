@@ -38,24 +38,41 @@ class MusementApi implements MusementApiInterface
             ->httpClient
             ->get('https://api.musement.com/api/v3/cities')
             ->then(
-                function (ResponseInterface $response) {
-                    $this
-                        ->logger
-                        ->info($response->getStatusCode() . ' Response received.');
-
-                    return $this->serializer->deserialize(
-                        $response->getBody()->getContents(),
-                        City::class . '[]',
-                        'json'
-                    );
-                },
-                function (Exception $exception) {
-                    $this->logger->error(
-                        'Error while retrieving cities from Musement API.',
-                        ['exception' => $exception]
-                    );
-                    throw new AppException('Error while retrieving weather data for a city.');
-                }
+                fn (ResponseInterface $response) => $this->handleHttpSuccess($response),
+                fn (Exception $exception) => $this->handleHttpError($exception)
             );
+    }
+
+    /**
+     * @param ResponseInterface $response
+     *
+     * @return City[]
+     */
+    private function handleHttpSuccess(ResponseInterface $response): array
+    {
+        $this
+            ->logger
+            ->info($response->getStatusCode() . ' Response received.');
+
+        return $this->serializer->deserialize(
+            $response->getBody()->getContents(),
+            City::class . '[]',
+            'json'
+        );
+    }
+
+    /**
+     * @param Exception $exception
+     *
+     * @throws AppException
+     */
+    private function handleHttpError(Exception $exception): void
+    {
+        $this->logger->error(
+            'Error while retrieving cities from Musement API.',
+            ['exception' => $exception]
+        );
+
+        throw new AppException('Error while retrieving cities from Musement API.', 0, $exception);
     }
 }
