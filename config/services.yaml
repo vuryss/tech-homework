@@ -24,9 +24,14 @@ services:
             - '../src/Kernel.php'
             - '../src/Tests/'
 
+    React\EventLoop\LoopInterface:
+        factory: [ 'React\EventLoop\Factory', 'create' ]
+
     App\Service\Forecast\WeatherApi\WeatherApi:
         arguments:
-            $httpClient: '@weather_api_http_client'
+            $httpClient: !service
+                class: 'React\Http\Browser'
+                autowire: true
             $serializer: !service
                 class: Symfony\Component\Serializer\Serializer
                 arguments:
@@ -40,7 +45,9 @@ services:
 
     App\Service\Musement\MusementApi:
         arguments:
-            $httpClient: '@musement_api_http_client'
+            $httpClient: !service
+                class: 'React\Http\Browser'
+                autowire: true
             $serializer: !service
                 class: Symfony\Component\Serializer\Serializer
                 arguments:

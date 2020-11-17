@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service\Forecast;
 
 use App\Service\Musement\City;
+use React\Promise\PromiseInterface;
 
 interface ForecastApiInterface
 {
@@ -12,7 +13,7 @@ interface ForecastApiInterface
      * @param City $city
      * @param int  $days
      *
-     * @return Forecast[]
+     * @return PromiseInterface
      */
-    public function getCityForecasts(City $city, int $days = 1): iterable;
+    public function getCityForecasts(City $city, int $days = 1): PromiseInterface;
 }

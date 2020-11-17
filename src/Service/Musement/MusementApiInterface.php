@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace App\Service\Musement;
 
+use React\Promise\PromiseInterface;
+
 interface MusementApiInterface
 {
-    /**
-     * @return City[]
-     */
-    public function getCities(): iterable;
+    public function getCities(): PromiseInterface;
 }

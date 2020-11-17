@@ -12,7 +12,7 @@ Outputs the results in the terminal.
 
 ## Configuration
 
-Add your weather API key in .env.local file like:
+Add your weather API key in `.env.local` file lie this:
 
 `WEATHER_API_KEY=my-api-key`
 
@@ -35,7 +35,7 @@ Add your weather API key in .env.local file like:
        
     `docker run -itu app --rm -v "$PWD":/var/app -w /var/app interview-task composer install`
     
-5. Add the weather API key as descrtined in Configuration section
+5. Add the weather API key as described in Configuration section
     
 ### Commands
 
@@ -104,7 +104,7 @@ OpenAPI specification can be found here: [OpenAPI spec](openapi-spec.yaml)
     
     If you run them outside docker - run them only without using docker.
     
-    To switch between the 2 - delete the bin/.phpunit directory so Symfony can create the symlinks again.
+    To switch between the 2 - delete the `bin/.phpunit` directory so Symfony can create the symlinks again.
      
 
 ### Used standards
