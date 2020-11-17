@@ -10,26 +10,27 @@ use App\Exception\AppException;
 use App\Service\Forecast\Forecast;
 use App\Service\Forecast\WeatherApi\WeatherApi;
 use App\Service\Musement\City;
+use App\Tests\ReactTestCast;
 use DateTimeImmutable;
-use Generator;
-use PHPUnit\Framework\TestCase;
+use Exception;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 use Psr\Log\LoggerInterface;
+use React\Http\Browser;
 use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
-use Symfony\Contracts\HttpClient\ResponseInterface;
 
-class WeatherApiTest extends TestCase
+use function React\Promise\reject;
+use function React\Promise\resolve;
+
+class WeatherApiTest extends ReactTestCast
 {
-    /**
-     * @throws AppException
-     */
     public function testValidResponse()
     {
-        $mockHttpClient = $this->createMock(HttpClientInterface::class);
         $mockSerializer = $this->createMock(SerializerInterface::class);
         $mockLogger = $this->createMock(LoggerInterface::class);
-        $mockResponse = $this->createMock(ResponseInterface::class);
+        $browser = $this->createMock(Browser::class);
+        $response = $this->createMock(ResponseInterface::class);
+        $stream = $this->createMock(StreamInterface::class);
 
         $date = new DateTimeImmutable('now');
 
@@ -41,17 +42,22 @@ class WeatherApiTest extends TestCase
             ->setWeather('Some weather')
             ->setDate($date);
 
-        $mockHttpClient
+        $browser
             ->expects($this->once())
-            ->method('request')
-            ->willReturn($mockResponse);
+            ->method('get')
+            ->willReturn(resolve($response));
+
+        $response
+            ->expects($this->once())
+            ->method('getBody')
+            ->willReturn($stream);
 
         $mockSerializer
             ->expects($this->once())
             ->method('deserialize')
             ->willReturn([$forecast]);
 
-        $musementApi = new WeatherApi($mockHttpClient, $mockSerializer, $mockLogger, 'api-key');
+        $musementApi = new WeatherApi($browser, $mockSerializer, $mockLogger, 'api-key');
         $forecasts = $musementApi->getCityForecasts($city, 1);
 
         foreach ($forecasts as $forecastResult) {
@@ -65,33 +71,23 @@ class WeatherApiTest extends TestCase
 
     public function testHttpException()
     {
-        $mockHttpClient = $this->createMock(HttpClientInterface::class);
         $mockSerializer = $this->createMock(SerializerInterface::class);
         $mockLogger = $this->createMock(LoggerInterface::class);
-        $mockResponse = $this->createMock(ResponseInterface::class);
-        $mockException = $this->createMock(ExceptionInterface::class);
+        $browser = $this->createMock(Browser::class);
+        $exception = new Exception('Some error');
 
-        $this->expectException(AppException::class);
+        $browser
+            ->expects($this->once())
+            ->method('get')
+            ->willReturn(reject($exception));
 
         $city = (new City())
             ->setLatitude('1.234')
             ->setLongitude('5.678');
 
-        $mockHttpClient
-            ->expects($this->once())
-            ->method('request')
-            ->willReturn($mockResponse);
-
-        $mockResponse
-            ->expects($this->once())
-            ->method('getContent')
-            ->willThrowException($mockException);
-
-        $musementApi = new WeatherApi($mockHttpClient, $mockSerializer, $mockLogger, 'api-key');
+        $musementApi = new WeatherApi($browser, $mockSerializer, $mockLogger, 'api-key');
         $result = $musementApi->getCityForecasts($city, 1);
 
-        if ($result instanceof Generator) {
-            $result->current();
-        }
+        $this->assertPromiseFailsWithException($result, AppException::class);
     }
 }

@@ -48,11 +48,19 @@ class WeatherApi implements ForecastApiInterface
             'q' => $city->getLatitude() . ',' . $city->getLongitude(),
         ];
 
+        $url = 'https://api.weatherapi.com/v1/forecast.json?' . http_build_query($queryParameters);
+
+        $this->logger->info('Sending GET request to: ' . $url);
+
         return $this
             ->httpClient
             ->get('https://api.weatherapi.com/v1/forecast.json?' . http_build_query($queryParameters))
             ->then(
                 function (ResponseInterface $response) {
+                    $this
+                        ->logger
+                        ->info($response->getStatusCode() . ' Response received.');
+
                     return $this
                         ->serializer
                         ->deserialize(

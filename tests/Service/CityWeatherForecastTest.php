@@ -16,6 +16,8 @@ use App\Service\Forecast\ForecastApiInterface;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 
+use function React\Promise\resolve;
+
 class CityWeatherForecastTest extends TestCase
 {
     public function testGetCitiesWithForecast()
@@ -39,12 +41,12 @@ class CityWeatherForecastTest extends TestCase
         $mockMusementApi
             ->expects($this->once())
             ->method('getCities')
-            ->willReturn([$city]);
+            ->willReturn(resolve([$city]));
 
         $mockWeatherApi
             ->expects($this->once())
             ->method('getCityForecasts')
-            ->willReturn([$forecast1, $forecast2]);
+            ->willReturn(resolve([$forecast1, $forecast2]));
 
         $cityWeatherForecast = new CityWeatherForecast($mockMusementApi, $mockWeatherApi);
 

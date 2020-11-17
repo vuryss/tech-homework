@@ -30,11 +30,19 @@ class MusementApi implements MusementApiInterface
 
     public function getCities(): PromiseInterface
     {
+        $url = 'https://api.musement.com/api/v3/cities';
+
+        $this->logger->info('Sending GET request to: ' . $url);
+
         return $this
             ->httpClient
             ->get('https://api.musement.com/api/v3/cities')
             ->then(
                 function (ResponseInterface $response) {
+                    $this
+                        ->logger
+                        ->info($response->getStatusCode() . ' Response received.');
+
                     return $this->serializer->deserialize(
                         $response->getBody()->getContents(),
                         City::class . '[]',

@@ -42,6 +42,8 @@ services:
                     $encoders:
                         - '@serializer.encoder.json'
             $apiKey: '%env(WEATHER_API_KEY)%'
+        tags:
+            - { name: monolog.logger, channel: weather_api }
 
     App\Service\Musement\MusementApi:
         arguments:
@@ -58,3 +60,5 @@ services:
                             autowire: true
                     $encoders:
                         - '@serializer.encoder.json'
+        tags:
+            - { name: monolog.logger, channel: musement_api }

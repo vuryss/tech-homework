@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Exception\AppException;
 use App\Service\CityWeatherForecast;
+use Exception;
 use Psr\Log\LoggerInterface;
 use React\EventLoop\LoopInterface;
 use Symfony\Component\Console\Command\Command;
@@ -20,6 +21,7 @@ class UpdateCityForecastCommand extends Command
     private LoopInterface $loop;
     private CityWeatherForecast $cityWeatherForecast;
     private LoggerInterface $logger;
+    private int $result;
 
     public function __construct(LoopInterface $loop, CityWeatherForecast $cityWeatherForecast, LoggerInterface $logger)
     {
@@ -28,6 +30,7 @@ class UpdateCityForecastCommand extends Command
         $this->loop = $loop;
         $this->cityWeatherForecast = $cityWeatherForecast;
         $this->logger = $logger;
+        $this->result = Command::SUCCESS;
     }
 
     protected function configure()
@@ -45,30 +48,23 @@ class UpdateCityForecastCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        try {
-            $days = $input->getOption('forecastDays');
-            $days = ctype_digit($days) ? (int) $days : 2;
+        $days = $input->getOption('forecastDays');
+        $days = ctype_digit($days) ? (int) $days : 2;
 
-            if ($days < 1) {
-                throw new AppException('Cannot fetch forecast for less than 1 days');
-            }
-
-            $this->outputCityForecastForDays($output, $days);
-        } catch (AppException $exception) {
+        if ($days < 1) {
             $output->writeln('');
-            $output->writeln('<error>' . $exception->getMessage() . '</error>');
-            $output->writeln('<error>One or more errors occurred during processing of city forecasts</error>');
+            $output->writeln('<error>Cannot fetch forecast for less than 1 days</error>');
             return Command::FAILURE;
         }
 
+        $this->outputCityForecastForDays($output, $days);
+
         $this->loop->run();
 
-        return Command::SUCCESS;
+        return $this->result;
     }
 
     /**
-     * @throws AppException
-     *
      * @param int             $days
      * @param OutputInterface $output
      */
@@ -97,6 +93,17 @@ class UpdateCityForecastCommand extends Command
                             . ' | ' . implode(' - ', $forecastTexts)
                         );
                     }
+
+                    $this->result = Command::SUCCESS;
+                }
+            )
+            ->then(
+                null,
+                function (Exception $exception) use ($output) {
+                    $output->writeln('');
+                    $output->writeln('<error>' . $exception->getMessage() . '</error>');
+                    $output->writeln('<error>One or more errors occurred during processing of city forecasts</error>');
+                    $this->result = Command::FAILURE;
                 }
             );
     }
