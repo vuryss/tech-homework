@@ -66,7 +66,7 @@ class WeatherApi implements ForecastApiInterface
      *
      * @return Forecast[]
      */
-    private function handleHttpSuccess(ResponseInterface $response): array
+    private function handleHttpSuccess(ResponseInterface $response): iterable
     {
         $this
             ->logger
