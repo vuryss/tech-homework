@@ -10,33 +10,39 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use React\Http\Browser;
 use React\Promise\PromiseInterface;
+use Symfony\Component\Serializer\Normalizer\AbstractObjectNormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class MusementApi implements MusementApiInterface
 {
     private Browser $httpClient;
+    private string $url;
     private SerializerInterface $serializer;
     private LoggerInterface $logger;
+    private ValidatorInterface $validator;
 
     public function __construct(
         Browser $httpClient,
+        string $url,
         SerializerInterface $serializer,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ValidatorInterface $validator
     ) {
         $this->httpClient = $httpClient;
+        $this->url = $url;
         $this->serializer = $serializer;
         $this->logger = $logger;
+        $this->validator = $validator;
     }
 
     public function getCities(): PromiseInterface
     {
-        $url = 'https://api.musement.com/api/v3/cities';
-
-        $this->logger->info('Sending GET request to: ' . $url);
+        $this->logger->info('Sending GET request to: ' . $this->url);
 
         return $this
             ->httpClient
-            ->get('https://api.musement.com/api/v3/cities')
+            ->get($this->url)
             ->then(
                 fn (ResponseInterface $response) => $this->handleHttpSuccess($response),
                 fn (Exception $exception) => $this->handleHttpError($exception)
@@ -47,6 +53,7 @@ class MusementApi implements MusementApiInterface
      * @param ResponseInterface $response
      *
      * @return City[]
+     * @throws AppException
      */
     private function handleHttpSuccess(ResponseInterface $response): array
     {
@@ -54,11 +61,26 @@ class MusementApi implements MusementApiInterface
             ->logger
             ->info($response->getStatusCode() . ' Response received.');
 
-        return $this->serializer->deserialize(
+        $cities = $this->serializer->deserialize(
             $response->getBody()->getContents(),
             City::class . '[]',
-            'json'
+            'json',
+            [AbstractObjectNormalizer::DISABLE_TYPE_ENFORCEMENT => true]
         );
+
+        $errors = $this->validator->validate($cities);
+
+        if (count($errors) > 0) {
+            $this
+                ->logger
+                ->error(
+                    'One or more cities could not be parsed from Musement API response. Errors: ' . (string)$errors
+                );
+
+            throw new AppException('One or more cities could not be parsed from Musement API response.');
+        }
+
+        return $cities;
     }
 
     /**

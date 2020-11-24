@@ -13,22 +13,26 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Log\LoggerInterface;
 use React\Http\Browser;
 use React\Promise\PromiseInterface;
+use Symfony\Component\Serializer\Normalizer\UnwrappingDenormalizer;
 use Symfony\Component\Serializer\SerializerInterface;
 
 class WeatherApi implements ForecastApiInterface
 {
     private Browser $httpClient;
+    private string $url;
     private SerializerInterface $serializer;
     private LoggerInterface $logger;
     private string $apiKey;
 
     public function __construct(
         Browser $httpClient,
+        string $url,
         SerializerInterface $serializer,
         LoggerInterface $logger,
         string $apiKey
     ) {
         $this->httpClient = $httpClient;
+        $this->url = $url;
         $this->logger = $logger;
         $this->serializer = $serializer;
         $this->apiKey = $apiKey;
@@ -48,13 +52,11 @@ class WeatherApi implements ForecastApiInterface
             'q' => $city->getLatitude() . ',' . $city->getLongitude(),
         ];
 
-        $url = 'https://api.weatherapi.com/v1/forecast.json?' . http_build_query($queryParameters);
-
-        $this->logger->info('Sending GET request to: ' . $url);
+        $this->logger->info('Sending GET request to: ' . $this->url);
 
         return $this
             ->httpClient
-            ->get('https://api.weatherapi.com/v1/forecast.json?' . http_build_query($queryParameters))
+            ->get($this->url . '?' . http_build_query($queryParameters))
             ->then(
                 fn (ResponseInterface $response) => $this->handleHttpSuccess($response),
                 fn (Exception $exception) => $this->handleHttpError($exception)
@@ -72,13 +74,16 @@ class WeatherApi implements ForecastApiInterface
             ->logger
             ->info($response->getStatusCode() . ' Response received.');
 
-        return $this
+        $forecasts = $this
             ->serializer
             ->deserialize(
                 $response->getBody()->getContents(),
                 Forecast::class . '[]',
-                'json'
+                'json',
+                [UnwrappingDenormalizer::UNWRAP_PATH => '[forecast][forecastday]']
             );
+
+        return $forecasts;
     }
 
     /**

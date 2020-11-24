@@ -28,20 +28,14 @@ class WeatherApiForecastNormalizerTest extends TestCase
             ->setDate($date);
 
         $apiResponseDecoded = [
-            'forecast' => [
-                'forecastday' => [
-                    0 => [
-                        'day' => [
-                            'condition' => [
-                                'text' => $forecast->getWeather(),
-                            ],
-                        ],
-                        'hour' => [
-                            0 => [
-                                'time_epoch' => $forecast->getDate()->getTimestamp(),
-                            ],
-                        ],
-                    ],
+            'day' => [
+                'condition' => [
+                    'text' => $forecast->getWeather(),
+                ],
+            ],
+            'hour' => [
+                0 => [
+                    'time_epoch' => $forecast->getDate()->getTimestamp(),
                 ],
             ],
         ];
@@ -49,23 +43,17 @@ class WeatherApiForecastNormalizerTest extends TestCase
         $mockLogger = $this->createMock(LoggerInterface::class);
 
         $normalizer = new WeatherApiForecastNormalizer($mockLogger);
-        $result = $normalizer->denormalize($apiResponseDecoded, Forecast::class, 'json');
+        $resultForecast = $normalizer->denormalize($apiResponseDecoded, Forecast::class, 'json');
 
-        if ($result instanceof Generator) {
-            $resultForecast = $result->current();
-
-            $this->assertEquals($forecast->getDate()->getTimestamp(), $resultForecast->getDate()->getTimestamp());
-            $this->assertEquals($forecast->getWeather(), $resultForecast->getWeather());
-
-            $result->next();
-        }
+        $this->assertEquals($forecast->getDate()->getTimestamp(), $resultForecast->getDate()->getTimestamp());
+        $this->assertEquals($forecast->getWeather(), $resultForecast->getWeather());
     }
 
     public function testSupports()
     {
         $mockLogger = $this->createMock(LoggerInterface::class);
         $normalizer = new WeatherApiForecastNormalizer($mockLogger);
-        $this->assertTrue($normalizer->supportsDenormalization([], Forecast::class . '[]'));
+        $this->assertTrue($normalizer->supportsDenormalization([], Forecast::class));
         $this->assertFalse($normalizer->supportsDenormalization([], City::class));
     }
 
@@ -92,111 +80,96 @@ class WeatherApiForecastNormalizerTest extends TestCase
     public function invalidDataProvider()
     {
         return [
-            'Missing forecast' => [
-                [['bla']],
-            ],
-            'Missing forecast day' => [
+            'Missing Day' => [
                 [
-                    'forecast' => [
-                        'bla',
+                    'hour' => [
+                        0 => [
+                            'time_epoch' => 123456,
+                        ],
                     ],
                 ],
             ],
-            'Invalid forcast day' => [
+            'Missing Hour' => [
                 [
-                    'forecast' => [
-                        'forecastday' => 'bla',
+                    'day' => [
+                        'condition' => [
+                            'text' => 'Some weather',
+                        ],
                     ],
+                ],
+            ],
+            'Missing Hour 0' => [
+                [
+                    'day' => [
+                        'condition' => [
+                            'text' => 'Some weather',
+                        ],
+                    ],
+                    'hour' => [],
                 ],
             ],
             'Missing timestamp' => [
                 [
-                    'forecast' => [
-                        'forecastday' => [
-                            0 => [
-                                'day' => [
-                                    'condition' => [
-                                        'text' => 'Some weather',
-                                    ],
-                                ],
-                            ],
+                    'day' => [
+                        'condition' => [
+                            'text' => 'Some weather',
+                        ],
+                    ],
+                    'hour' => [
+                        0 => [],
+                    ],
+                ],
+            ],
+            'Missing weather text' => [
+                [
+                    'day' => [
+                        'condition' => [],
+                    ],
+                    'hour' => [
+                        0 => [
+                            'time_epoch' => 123456,
                         ],
                     ],
                 ],
             ],
-            'Invalid timestamp' => [
+            'Invalid Timestamp' => [
                 [
-                    'forecast' => [
-                        'forecastday' => [
-                            0 => [
-                                'day' => [
-                                    'condition' => [
-                                        'text' => 'Some weather',
-                                    ],
-                                ],
-                                'hour' => [
-                                    0 => [
-                                        'time_epoch' => 'asd',
-                                    ],
-                                ],
-                            ],
+                    'day' => [
+                        'condition' => [
+                            'text' => 'Some weather',
+                        ],
+                    ],
+                    'hour' => [
+                        0 => [
+                            'time_epoch' => -123456,
                         ],
                     ],
                 ],
             ],
-            'Invalid timestamp 2' => [
+            'Invalid Timestamp 2' => [
                 [
-                    'forecast' => [
-                        'forecastday' => [
-                            0 => [
-                                'day' => [
-                                    'condition' => [
-                                        'text' => 'Some weather',
-                                    ],
-                                ],
-                                'hour' => [
-                                    0 => [
-                                        'time_epoch' => -123132,
-                                    ],
-                                ],
-                            ],
+                    'day' => [
+                        'condition' => [
+                            'text' => 'Some weather',
+                        ],
+                    ],
+                    'hour' => [
+                        0 => [
+                            'time_epoch' => 'asdds',
                         ],
                     ],
                 ],
             ],
-            'Missing condition' => [
+            'Invalid Condition' => [
                 [
-                    'forecast' => [
-                        'forecastday' => [
-                            0 => [
-                                'day' => [
-                                ],
-                                'hour' => [
-                                    0 => [
-                                        'time_epoch' => 1604966400,
-                                    ],
-                                ],
-                            ],
+                    'day' => [
+                        'condition' => [
+                            'text' => ['Some weather'],
                         ],
                     ],
-                ],
-            ],
-            'Invalid condition' => [
-                [
-                    'forecast' => [
-                        'forecastday' => [
-                            0 => [
-                                'day' => [
-                                    'condition' => [
-                                        'text' => ['Some weather'],
-                                    ],
-                                ],
-                                'hour' => [
-                                    0 => [
-                                        'time_epoch' => 1604966400,
-                                    ],
-                                ],
-                            ],
+                    'hour' => [
+                        0 => [
+                            'time_epoch' => -123456,
                         ],
                     ],
                 ],

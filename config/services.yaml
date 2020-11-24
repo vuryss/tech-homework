@@ -29,15 +29,7 @@ services:
             $httpClient: !service
                 class: 'React\Http\Browser'
                 autowire: true
-            $serializer: !service
-                class: Symfony\Component\Serializer\Serializer
-                arguments:
-                    $normalizers:
-                        - !service
-                            class: 'App\Service\Forecast\WeatherApi\WeatherApiForecastNormalizer'
-                            autowire: true
-                    $encoders:
-                        - '@serializer.encoder.json'
+            $url: '%env(WEATHER_API_URL)%'
             $apiKey: '%env(WEATHER_API_KEY)%'
         tags:
             - { name: monolog.logger, channel: weather_api }
@@ -47,15 +39,6 @@ services:
             $httpClient: !service
                 class: 'React\Http\Browser'
                 autowire: true
-            $serializer: !service
-                class: Symfony\Component\Serializer\Serializer
-                arguments:
-                    $normalizers:
-                        - '@serializer.denormalizer.array'
-                        - !service
-                            class: 'App\Service\Musement\CityNormalizer'
-                            autowire: true
-                    $encoders:
-                        - '@serializer.encoder.json'
+            $url: '%env(MUSEMENT_API_URL)%'
         tags:
             - { name: monolog.logger, channel: musement_api }

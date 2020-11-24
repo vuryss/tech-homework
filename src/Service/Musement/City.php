@@ -5,12 +5,25 @@ declare(strict_types=1);
 namespace App\Service\Musement;
 
 use App\Service\Forecast\Forecast;
-use DateTimeImmutable;
+use Symfony\Component\Validator\Constraints as Assert;
 
 class City
 {
+    /**
+     * @Assert\NotBlank
+     */
     private string $name;
+
+    /**
+     * @Assert\NotBlank
+     * @Assert\Regex("/^-?\d+(\.\d+)?$/")
+     */
     private string $latitude;
+
+    /**
+     * @Assert\NotBlank
+     * @Assert\Regex("/^-?\d+(\.\d+)?$/")
+     */
     private string $longitude;
 
     /**

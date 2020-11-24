@@ -57,7 +57,7 @@ class WeatherApiTest extends ReactTestCast
             ->method('deserialize')
             ->willReturn([$forecast]);
 
-        $musementApi = new WeatherApi($browser, $mockSerializer, $mockLogger, 'api-key');
+        $musementApi = new WeatherApi($browser, '', $mockSerializer, $mockLogger, 'api-key');
         $forecasts = $musementApi->getCityForecasts($city, 1);
 
         foreach ($forecasts as $forecastResult) {
@@ -85,7 +85,7 @@ class WeatherApiTest extends ReactTestCast
             ->setLatitude('1.234')
             ->setLongitude('5.678');
 
-        $musementApi = new WeatherApi($browser, $mockSerializer, $mockLogger, 'api-key');
+        $musementApi = new WeatherApi($browser, '', $mockSerializer, $mockLogger, 'api-key');
         $result = $musementApi->getCityForecasts($city, 1);
 
         $this->assertPromiseFailsWithException($result, AppException::class);
