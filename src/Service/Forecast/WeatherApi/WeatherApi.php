@@ -74,7 +74,7 @@ class WeatherApi implements ForecastApiInterface
             ->logger
             ->info($response->getStatusCode() . ' Response received.');
 
-        $forecasts = $this
+        return $this
             ->serializer
             ->deserialize(
                 $response->getBody()->getContents(),
@@ -82,8 +82,6 @@ class WeatherApi implements ForecastApiInterface
                 'json',
                 [UnwrappingDenormalizer::UNWRAP_PATH => '[forecast][forecastday]']
             );
-
-        return $forecasts;
     }
 
     /**
